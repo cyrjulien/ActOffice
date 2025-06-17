@@ -51,7 +51,6 @@ app.use(cors());
 app.use(express.json());
 
 // Servir les fichiers statiques depuis la racine du projet
-app.use(express.static(path.join(__dirname, '../../google-auth-portal')));
 
 
 // Route d'authentification
@@ -113,10 +112,6 @@ app.get('/api/users', async (req, res) => {
     }
 });
 
-// Catch-all to serve the frontend for any other request
-app.get('*', (req, res) => {
-  res.sendFile(path.resolve(__dirname, '../../google-auth-portal', 'index.html'));
-});
 
 
 // Initialize DB and then start server
