@@ -1,0 +1,12 @@
+# Dependencies
+/node_modules
+
+# Data
+/database.sqlite
+/database.sqlite-journal
+
+# Vercel
+.vercel
+
+# Environment
+.env
