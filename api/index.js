@@ -106,9 +106,27 @@ app.get('/api/users', async (req, res) => {
     }
 
     try {
-        const users = await db.all('SELECT id, email, name, createdAt FROM users ORDER BY createdAt DESC');
-        res.json(users);
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 10;
+        const offset = (page - 1) * limit;
+
+        const users = await db.all(
+            'SELECT id, email, name, createdAt FROM users ORDER BY createdAt DESC LIMIT ? OFFSET ?',
+            [limit, offset]
+        );
+        
+        const totalResult = await db.get('SELECT COUNT(*) as count FROM users');
+        const totalUsers = totalResult.count;
+        const totalPages = Math.ceil(totalUsers / limit);
+
+        res.json({
+            users,
+            totalPages,
+            currentPage: page,
+            totalUsers
+        });
     } catch (error) {
+        console.error("Failed to fetch users:", error);
         res.status(500).json({ error: 'Failed to fetch users' });
     }
 });

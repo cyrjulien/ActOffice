@@ -18,7 +18,7 @@ window.onload = () => {
     });
     adminLink.addEventListener('click', (e) => {
         e.preventDefault();
-        displayAdminView();
+        displayAdminView(1); // Afficher la première page
     });
     homeLink.addEventListener('click', (e) => {
         e.preventDefault();
@@ -68,21 +68,16 @@ function updateUI() {
     const user = userString ? JSON.parse(userString) : null;
 
     if (user) {
-        // Utilisateur connecté
         document.body.classList.remove('logged-out');
         document.body.classList.add('logged-in');
-
         userNameElement.innerText = user.name;
         userPictureElement.src = user.picture || '';
-
         if (user.isAdmin) {
             adminLink.style.display = 'block';
         } else {
             adminLink.style.display = 'none';
         }
-
     } else {
-        // Utilisateur déconnecté
         document.body.classList.remove('logged-in');
         document.body.classList.add('logged-out');
         adminLink.style.display = 'none';
@@ -99,15 +94,15 @@ function displayHomepageView() {
     document.querySelector('#admin-link a').classList.remove('active');
 }
 
-async function displayAdminView() {
+async function displayAdminView(page = 1) {
     const user = JSON.parse(sessionStorage.getItem('user'));
     if (!user || !user.isAdmin) return;
 
     try {
-        const res = await fetch(`/api/users?adminEmail=${user.email}`);
+        const res = await fetch(`/api/users?adminEmail=${user.email}&page=${page}&limit=10`);
         if (!res.ok) throw new Error('Failed to fetch users');
         
-        const users = await res.json();
+        const { users, totalPages, currentPage } = await res.json();
         
         let tableHtml = `
             <h1>Administration - Liste des utilisateurs</h1>
@@ -132,7 +127,20 @@ async function displayAdminView() {
         });
         tableHtml += '</tbody></table>';
 
-        mainContentElement.innerHTML = tableHtml;
+        // Ajout des contrôles de pagination
+        let paginationHtml = `<nav><ul class="pagination">`;
+        if (currentPage > 1) {
+            paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="displayAdminView(${currentPage - 1})">Précédent</a></li>`;
+        }
+        for (let i = 1; i <= totalPages; i++) {
+            paginationHtml += `<li class="page-item ${i === currentPage ? 'active' : ''}"><a class="page-link" href="#" onclick="displayAdminView(${i})">${i}</a></li>`;
+        }
+        if (currentPage < totalPages) {
+            paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="displayAdminView(${currentPage + 1})">Suivant</a></li>`;
+        }
+        paginationHtml += `</ul></nav>`;
+
+        mainContentElement.innerHTML = tableHtml + paginationHtml;
         document.querySelector('#home-link a').classList.remove('active');
         document.querySelector('#admin-link a').classList.add('active');
 
