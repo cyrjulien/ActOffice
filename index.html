@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portail d'Authentification Google</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+    <div id="auth-container">
+        <h1>Veuillez vous connecter</h1>
+        <div id="g_id_onload"
+             data-client_id="490585411303-rqqml2gfgevu094mnntorupa7vphqgn3.apps.googleusercontent.com"
+             data-callback="handleCredentialResponse">
+        </div>
+        <div class="g_id_signin"
+             data-type="standard"
+             data-size="large"
+             data-theme="outline"
+             data-text="sign_in_with"
+             data-shape="rectangular"
+             data-logo_alignment="left">
+        </div>
+    </div>
+
+    <div id="content-container" style="display:none;">
+        <h1>Bienvenue sur le portail</h1>
+        <p>Voici les informations statiques accessibles après authentification.</p>
+        <button id="signout-button">Se déconnecter</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
