@@ -1,36 +1,26 @@
-body {
-    font-family: sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
-    background-color: #f0f2f5;
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
 }
 
-#auth-container, #content-container {
-    text-align: center;
-    background-color: white;
-    padding: 40px;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+/* --- Gestion de l'état de connexion --- */
+
+/* Par défaut, on est déconnecté */
+#content-container { display: none; }
+#auth-container { display: block; }
+
+/* Quand on est connecté */
+body.logged-in #content-container { display: flex; }
+body.logged-in #auth-container { display: none; }
+
+/* --- Styles généraux --- */
+
+#auth-container .row {
+    min-height: 100vh;
 }
 
-h1 {
-    margin-bottom: 20px;
-}
-
-#signout-button {
-    margin-top: 20px;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
-    background-color: #dc3545;
-    color: white;
-    cursor: pointer;
-    font-size: 16px;
-}
-
-#signout-button:hover {
-    background-color: #c82333;
+#content-container {
+    min-height: 100vh;
 }

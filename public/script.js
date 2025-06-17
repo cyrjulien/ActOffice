@@ -1,57 +1,143 @@
-function handleCredentialResponse(response) {
-    // Pour une application réelle, vous enverriez ce jeton à votre backend
-    // pour vérification et pour créer une session utilisateur.
-    // Ici, nous allons simplement décoder le jeton côté client à des fins de démonstration.
-    const responsePayload = parseJwt(response.credential);
+// --- ÉLÉMENTS DU DOM ---
+let userNameElement, userPictureElement, signOutButton, adminLink, homeLink, mainContentElement;
 
-    console.log("ID: " + responsePayload.sub);
-    console.log('Full Name: ' + responsePayload.name);
-    console.log('Given Name: ' + responsePayload.given_name);
-    console.log('Family Name: ' + responsePayload.family_name);
-    console.log("Image URL: " + responsePayload.picture);
-    console.log("Email: " + responsePayload.email);
+// --- INITIALISATION ---
+window.onload = () => {
+    // Récupérer les éléments du DOM
+    userNameElement = document.getElementById('user-name');
+    userPictureElement = document.getElementById('user-picture');
+    signOutButton = document.getElementById('signout-button');
+    adminLink = document.getElementById('admin-link');
+    homeLink = document.getElementById('home-link');
+    mainContentElement = document.getElementById('main-content');
 
-    // Stocker l'état de connexion
-    sessionStorage.setItem('userLoggedIn', 'true');
+    // Attacher les écouteurs d'événements
+    signOutButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        signOut();
+    });
+    adminLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        displayAdminView();
+    });
+    homeLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        displayHomepageView();
+    });
 
-    // Mettre à jour l'interface
     updateUI();
-}
+};
 
-function parseJwt (token) {
+// --- AUTHENTIFICATION ---
+async function handleCredentialResponse(response) {
     try {
-        return JSON.parse(atob(token.split('.')[1]));
-    } catch (e) {
-        return null;
+        const res = await fetch('/api/auth', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ token: response.credential }),
+        });
+
+        if (!res.ok) {
+            throw new Error('Authentication failed');
+        }
+
+        const user = await res.json();
+
+        // Stocker les informations de l'utilisateur
+        sessionStorage.setItem('user', JSON.stringify(user));
+        
+        updateUI();
+        displayHomepageView();
+
+    } catch (error) {
+        console.error('Error during authentication:', error);
     }
 }
 
 function signOut() {
-    sessionStorage.removeItem('userLoggedIn');
-    // Note : La nouvelle API Google Identity Services ne propose pas de méthode de déconnexion programmatique
-    // comme l'ancienne API. La gestion de l'état de connexion est laissée à l'application.
-    // Nous simulons la déconnexion en supprimant notre indicateur de session.
+    sessionStorage.removeItem('user');
+    google.accounts.id.disableAutoSelect();
     updateUI();
 }
 
+// --- MISE À JOUR DE L'INTERFACE ---
 function updateUI() {
-    const loggedIn = sessionStorage.getItem('userLoggedIn') === 'true';
-    const authContainer = document.getElementById('auth-container');
-    const contentContainer = document.getElementById('content-container');
+    const userString = sessionStorage.getItem('user');
+    const user = userString ? JSON.parse(userString) : null;
 
-    if (loggedIn) {
-        authContainer.style.display = 'none';
-        contentContainer.style.display = 'block';
+    if (user) {
+        // Utilisateur connecté
+        document.body.classList.remove('logged-out');
+        document.body.classList.add('logged-in');
+
+        userNameElement.innerText = user.name;
+        userPictureElement.src = user.picture || '';
+
+        if (user.isAdmin) {
+            adminLink.style.display = 'block';
+        } else {
+            adminLink.style.display = 'none';
+        }
+
     } else {
-        authContainer.style.display = 'block';
-        contentContainer.style.display = 'none';
+        // Utilisateur déconnecté
+        document.body.classList.remove('logged-in');
+        document.body.classList.add('logged-out');
+        adminLink.style.display = 'none';
     }
 }
 
-window.onload = () => {
-    updateUI();
-    const signOutButton = document.getElementById('signout-button');
-    if (signOutButton) {
-        signOutButton.addEventListener('click', signOut);
+// --- VUES ---
+function displayHomepageView() {
+    mainContentElement.innerHTML = `
+        <h1>Bienvenue sur le portail</h1>
+        <p>Voici les informations statiques accessibles après authentification.</p>
+    `;
+    document.querySelector('#home-link a').classList.add('active');
+    document.querySelector('#admin-link a').classList.remove('active');
+}
+
+async function displayAdminView() {
+    const user = JSON.parse(sessionStorage.getItem('user'));
+    if (!user || !user.isAdmin) return;
+
+    try {
+        const res = await fetch(`/api/users?adminEmail=${user.email}`);
+        if (!res.ok) throw new Error('Failed to fetch users');
+        
+        const users = await res.json();
+        
+        let tableHtml = `
+            <h1>Administration - Liste des utilisateurs</h1>
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Email</th>
+                        <th>Nom</th>
+                        <th>Date de création</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        users.forEach(u => {
+            tableHtml += `
+                <tr>
+                    <td>${u.email}</td>
+                    <td>${u.name}</td>
+                    <td>${new Date(u.createdAt).toLocaleString()}</td>
+                </tr>
+            `;
+        });
+        tableHtml += '</tbody></table>';
+
+        mainContentElement.innerHTML = tableHtml;
+        document.querySelector('#home-link a').classList.remove('active');
+        document.querySelector('#admin-link a').classList.add('active');
+
+    } catch (error) {
+        mainContentElement.innerHTML = `<p class="text-danger">Erreur lors du chargement des utilisateurs.</p>`;
+        console.error('Failed to display admin view:', error);
     }
-};
+}
