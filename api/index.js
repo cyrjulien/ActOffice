@@ -50,7 +50,8 @@ async function initializeDatabase() {
 app.use(cors());
 app.use(express.json());
 
-// Servir les fichiers statiques depuis la racine du projet
+// Servir les fichiers statiques du dossier public pour le développement local
+app.use(express.static(path.join(__dirname, '../public')));
 
 
 // Route d'authentification
